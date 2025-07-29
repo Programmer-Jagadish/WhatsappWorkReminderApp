@@ -42,9 +42,11 @@ jobs:
       - name: Configure rclone
         run: |
           mkdir -p ~/.config/rclone
-          echo "${{ secrets.RCLONE_CONFIG }}" > ~/.config/rclone/rclone.conf
+          echo "${{ secrets.RCLONE_CONFIG_B64 }}" | base64 --decode > ~/.config/rclone/rclone.conf
 
-      # ✅ Upload log file to Google Drive folder
+
+
+         # ✅ Upload log file to Google Drive folder
       - name: Upload reminders log to Google Drive
         run: |
           rclone copy logs/reminders_log.txt gdrive:WhatsappReminderLog --create-empty-src-dirs --verbose
