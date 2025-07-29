@@ -2,9 +2,8 @@ name: Daily WhatsApp Reminder
 
 on:
   schedule:
-    - cron: '30 15 * * *'  # Runs daily at 9:00 PM IST
+    - cron: '30 15 * * *'  # Runs daily at 9:00 PM IST (15:30 UTC)
   workflow_dispatch:      # Allows manual trigger from Actions tab
-
 
 jobs:
   build-and-run:
@@ -14,21 +13,24 @@ jobs:
       TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
       TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
       TWILIO_FROM_NUMBER: ${{ secrets.TWILIO_FROM_NUMBER }}
-      GDRIVE_CREDENTIALS: ${{ secrets.GDRIVE_CREDENTIALS }}
 
     steps:
+      # ✅ Checkout project code
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # ✅ Set up Java
       - name: Set up Java
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
 
+      # ✅ Build project
       - name: Build with Maven
         run: mvn clean install
 
+      # ✅ Run the WhatsApp Reminder Java app
       - name: Run WhatsApp Reminder App
         run: java -cp target/WhatsAppReminderRotating-1.0-SNAPSHOT.jar WhatsAppReminderRotating
 
@@ -36,21 +38,13 @@ jobs:
       - name: Install rclone
         run: sudo apt-get update && sudo apt-get install -y rclone
 
-      # ✅ Save Google credentials to JSON file
-      - name: Write credentials file
-        run: |
-          echo "${GDRIVE_CREDENTIALS}" > /tmp/credentials.json
-
-      # ✅ Configure rclone for Google Drive
+      # ✅ Setup rclone config from GitHub Secret
       - name: Configure rclone
         run: |
           mkdir -p ~/.config/rclone
-          echo "[gdrive]" > ~/.config/rclone/rclone.conf
-          echo "type = drive" >> ~/.config/rclone/rclone.conf
-          echo "scope = drive.file" >> ~/.config/rclone/rclone.conf
-          echo "service_account_file = /tmp/credentials.json" >> ~/.config/rclone/rclone.conf
+          echo "${{ secrets.RCLONE_CONFIG }}" > ~/.config/rclone/rclone.conf
 
-      # ✅ Upload log file to your shared folder
+      # ✅ Upload log file to Google Drive folder
       - name: Upload reminders log to Google Drive
         run: |
           rclone copy logs/reminders_log.txt gdrive:WhatsappReminderLog --create-empty-src-dirs --verbose
