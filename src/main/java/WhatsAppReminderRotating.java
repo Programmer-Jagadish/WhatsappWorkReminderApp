@@ -3,6 +3,10 @@ import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.type.PhoneNumber;
 import io.github.cdimascio.dotenv.Dotenv;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.*;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -28,8 +32,8 @@ public class WhatsAppReminderRotating {
             "Utensils Washing",
             "Dustbin Disposal",
             "Morning Water Tank Fill",
-            "Drinking Water Can",
-            "Kitchen Floor Clean"
+            "Kitchen Floor Clean",
+            "Drinking Water Can"
     );
 
     // Map of people and their WhatsApp numbers
@@ -46,39 +50,65 @@ public class WhatsAppReminderRotating {
         Twilio.init(ACCOUNT_SID, AUTH_TOKEN);
 
         LocalDate startDate = LocalDate.of(2025, 7, 26); // base rotation date
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now().plusDays(1);   // ✅ Send tomorrow's reminder today
         long daysElapsed = java.time.temporal.ChronoUnit.DAYS.between(startDate, today);
 
         List<String> names = new ArrayList<>(people.keySet());
-        Map<String, String> todayAssignments = new LinkedHashMap<>();
+        Map<String, List<String>> todayAssignments = new LinkedHashMap<>();
 
-        int rotationIndex = 0;
-
-        for (String task : tasks) {
-            if (task.equals("Drinking Water Can")) {
-                if (daysElapsed % 3 != 0) {
-                    continue; // Skip assignment for today
-                }
-            }
-
-            int memberIndex = (int)((daysElapsed + rotationIndex) % names.size());
-            String person = names.get(memberIndex);
-            todayAssignments.put(person, task);
-
-            rotationIndex++;
+        // Initialize map
+        for (String name : names) {
+            todayAssignments.put(name, new ArrayList<>());
         }
 
+        // ✅ Step 1: Strict 4-day round-robin for main tasks
+        int shift = (int) (daysElapsed % names.size());
+        for (int i = 0; i < tasks.size() - 1; i++) { // exclude Drinking Water Can
+            String task = tasks.get(i);
+            int memberIndex = (i + shift) % names.size();
+            String person = names.get(memberIndex);
+            todayAssignments.get(person).add(task);
+        }
+
+        // ✅ Step 2: Independent rotation for Drinking Water Can every 3rd day
+        if (daysElapsed % 3 == 0) {
+            int extraIndex = (int) ((daysElapsed / 3) % names.size());
+            String personForExtra = names.get(extraIndex);
+            todayAssignments.get(personForExtra).add("Drinking Water Can");
+        }
+
+        // ✅ Build message
         StringBuilder messageText = new StringBuilder();
         messageText.append("🧾 *Daily Room Work Tracker* - ").append(today).append("\n\n");
 
-        for (Map.Entry<String, String> entry : todayAssignments.entrySet()) {
-            messageText.append("👤 ").append(entry.getKey())
-                    .append(": ").append(entry.getValue()).append("\n");
+        for (Map.Entry<String, List<String>> entry : todayAssignments.entrySet()) {
+            if (!entry.getValue().isEmpty()) {
+                messageText.append("👤 ").append(entry.getKey()).append(": ")
+                        .append(String.join(", ", entry.getValue()))
+                        .append("\n");
+            }
         }
 
         messageText.append("\nPlease complete your tasks sincerely. ✅");
 
-        // Send to all members
+        // ✅ Step 3: Log reminder to a shared file
+        try {
+            Path logDir = Paths.get("logs");
+            if (!Files.exists(logDir)) {
+                Files.createDirectories(logDir);
+            }
+            String logFilePath = "logs/reminders_log.txt";
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFilePath, true))) {
+                writer.write("------ Reminder Date: " + today + " ------\n");
+                writer.write(messageText.toString());
+                writer.write("\n---------------------------------------------\n\n");
+            }
+            System.out.println("📜 Reminder logged successfully.");
+        } catch (IOException e) {
+            System.err.println("⚠️ Failed to write log file: " + e.getMessage());
+        }
+
+        // ✅ Step 4: Send to all members
         for (Map.Entry<String, String> entry : people.entrySet()) {
             try {
                 Message message = Message.creator(
@@ -92,5 +122,8 @@ public class WhatsAppReminderRotating {
                 System.err.println("❌ Error for " + entry.getKey() + ": " + e.getMessage());
             }
         }
+
+        // Print final message for verification
+        System.out.println("\n--- Tomorrow's Reminder ---\n" + messageText);
     }
 }
