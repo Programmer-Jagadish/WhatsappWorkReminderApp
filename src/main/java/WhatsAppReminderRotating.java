@@ -12,7 +12,6 @@ import java.util.*;
 
 public class WhatsAppReminderRotating {
 
-    // Load .env file locally
     private static final Dotenv dotenv = Dotenv.configure()
             .ignoreIfMissing()
             .load();
@@ -27,7 +26,6 @@ public class WhatsAppReminderRotating {
     public static final String AUTH_TOKEN = getEnv("TWILIO_AUTH_TOKEN");
     public static final String SENDER_NUMBER = getEnv("TWILIO_FROM_NUMBER");
 
-    // List of tasks
     static final List<String> tasks = Arrays.asList(
             "Utensils Washing",
             "Dustbin Disposal",
@@ -36,7 +34,6 @@ public class WhatsAppReminderRotating {
             "Drinking Water Can"
     );
 
-    // Map of people and their WhatsApp numbers
     static final Map<String, String> people = new LinkedHashMap<>();
 
     static {
@@ -49,35 +46,31 @@ public class WhatsAppReminderRotating {
     public static void main(String[] args) {
         Twilio.init(ACCOUNT_SID, AUTH_TOKEN);
 
-        LocalDate startDate = LocalDate.of(2025, 7, 26); // base rotation date
-        LocalDate today = LocalDate.now().plusDays(1);   // ✅ Send tomorrow's reminder today
+        LocalDate startDate = LocalDate.of(2025, 7, 26);
+        LocalDate today = LocalDate.now().plusDays(1);
         long daysElapsed = java.time.temporal.ChronoUnit.DAYS.between(startDate, today);
 
         List<String> names = new ArrayList<>(people.keySet());
         Map<String, List<String>> todayAssignments = new LinkedHashMap<>();
 
-        // Initialize map
         for (String name : names) {
             todayAssignments.put(name, new ArrayList<>());
         }
 
-        // ✅ Step 1: Strict 4-day round-robin for main tasks
         int shift = (int) (daysElapsed % names.size());
-        for (int i = 0; i < tasks.size() - 1; i++) { // exclude Drinking Water Can
+        for (int i = 0; i < tasks.size() - 1; i++) {
             String task = tasks.get(i);
             int memberIndex = (i + shift) % names.size();
             String person = names.get(memberIndex);
             todayAssignments.get(person).add(task);
         }
 
-        // ✅ Step 2: Independent rotation for Drinking Water Can every 3rd day
         if (daysElapsed % 3 == 0) {
             int extraIndex = (int) ((daysElapsed / 3) % names.size());
             String personForExtra = names.get(extraIndex);
             todayAssignments.get(personForExtra).add("Drinking Water Can");
         }
 
-        // ✅ Build message
         StringBuilder messageText = new StringBuilder();
         messageText.append("🧾 *Daily Room Work Tracker* - ").append(today).append("\n\n");
 
@@ -91,7 +84,7 @@ public class WhatsAppReminderRotating {
 
         messageText.append("\nPlease complete your tasks sincerely. ✅");
 
-        // ✅ Step 3: Log reminder to a shared file
+        // ✅ Write log locally (same as before, just local file)
         try {
             Path logDir = Paths.get("logs");
             if (!Files.exists(logDir)) {
@@ -103,12 +96,12 @@ public class WhatsAppReminderRotating {
                 writer.write(messageText.toString());
                 writer.write("\n---------------------------------------------\n\n");
             }
-            System.out.println("📜 Reminder logged successfully.");
+            System.out.println("📜 Reminder logged locally.");
         } catch (IOException e) {
             System.err.println("⚠️ Failed to write log file: " + e.getMessage());
         }
 
-        // ✅ Step 4: Send to all members
+        // ✅ Send message to all members (unchanged)
         for (Map.Entry<String, String> entry : people.entrySet()) {
             try {
                 Message message = Message.creator(
@@ -123,7 +116,24 @@ public class WhatsAppReminderRotating {
             }
         }
 
-        // Print final message for verification
+        // ✅ Print final message (unchanged)
         System.out.println("\n--- Tomorrow's Reminder ---\n" + messageText);
+
+        // ✅ Extra: Sync log file to Google Drive without overwriting
+        try {
+            ProcessBuilder pb = new ProcessBuilder(
+                    "rclone",
+                    "copy",
+                    "logs/reminders_log.txt",
+                    "gdrive:/WhatsappReminderLog/",
+                    "--update"
+            );
+            pb.inheritIO();
+            Process process = pb.start();
+            process.waitFor();
+            System.out.println("☁️ Log file synced to Google Drive successfully.");
+        } catch (Exception e) {
+            System.err.println("⚠️ Failed to sync log file to Google Drive: " + e.getMessage());
+        }
     }
 }
