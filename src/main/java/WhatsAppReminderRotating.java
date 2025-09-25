@@ -6,8 +6,12 @@ import io.github.cdimascio.dotenv.Dotenv;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class WhatsAppReminderRotating {
@@ -92,7 +96,8 @@ public class WhatsAppReminderRotating {
             }
             String logFilePath = "logs/reminders_log.txt";
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFilePath, true))) {
-                writer.write("------ Reminder Date: " + today + " ------\n");
+                String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                writer.write("------ Reminder Date: " + today + " (" + timestamp + ") ------\n");
                 writer.write(messageText.toString());
                 writer.write("\n---------------------------------------------\n\n");
             }
