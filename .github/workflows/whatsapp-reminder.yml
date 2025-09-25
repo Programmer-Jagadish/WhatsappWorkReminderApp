@@ -30,10 +30,6 @@ jobs:
       - name: Build with Maven
         run: mvn clean install
 
-      # ✅ Run the WhatsApp Reminder Java app
-      - name: Run WhatsApp Reminder App
-        run: java -cp target/WhatsAppReminderRotating-1.0-SNAPSHOT.jar WhatsAppReminderRotating
-
       # ✅ Install rclone
       - name: Install rclone
         run: sudo apt-get update && sudo apt-get install -y rclone
@@ -44,9 +40,17 @@ jobs:
           mkdir -p ~/.config/rclone
           echo "${{ secrets.RCLONE_CONFIG_B64 }}" | base64 --decode > ~/.config/rclone/rclone.conf
 
+      # ✅ Download existing log file (if any) from Google Drive before running app
+      - name: Download existing log from Google Drive
+        run: |
+          mkdir -p logs
+          rclone copy gdrive:WhatsappReminderLog/reminders_log.txt logs/ --ignore-existing --verbose || true
 
+      # ✅ Run the WhatsApp Reminder Java app (this appends new logs locally)
+      - name: Run WhatsApp Reminder App
+        run: java -cp target/WhatsAppReminderRotating-1.0-SNAPSHOT.jar WhatsAppReminderRotating
 
-         # ✅ Upload log file to Google Drive folder
+      # ✅ Upload updated log file back to Google Drive
       - name: Upload reminders log to Google Drive
         run: |
-          rclone copy logs/reminders_log.txt gdrive:WhatsappReminderLog --create-empty-src-dirs --verbose
+          rclone copy logs/reminders_log.txt gdrive:WhatsappReminderLog --update --verbose
