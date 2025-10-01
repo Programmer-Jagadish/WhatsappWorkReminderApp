@@ -55,6 +55,7 @@ public class WhatsAppReminderRotating {
 
         LocalDate today=LocalDate.now(ZoneId.of("Asia/Kolkata")).plusDays(1);
         String todayFormated = today.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+        String reminderDate= today.minusDays(1).format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
         long daysElapsed = java.time.temporal.ChronoUnit.DAYS.between(startDate, today);
 
         List<String> names = new ArrayList<>(people.keySet());
@@ -100,7 +101,7 @@ public class WhatsAppReminderRotating {
             String logFilePath = "logs/reminders_log.txt";
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFilePath, true))) {
                 String timestamp = LocalTime.now(ZoneId.of("Asia/Kolkata")).format(DateTimeFormatter.ofPattern("hh:mm a"));
-                writer.write("------ Reminder Date: " + todayFormated+ " (" + timestamp + ") ------\n");
+                writer.write("------ Reminder Date: " + reminderDate + " (" + timestamp + ") ------\n");
                 writer.write(messageText.toString());
                 writer.write("\n---------------------------------------------\n\n");
             }
