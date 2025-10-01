@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -51,7 +52,9 @@ public class WhatsAppReminderRotating {
         Twilio.init(ACCOUNT_SID, AUTH_TOKEN);
 
         LocalDate startDate = LocalDate.of(2025, 7, 26);
-        LocalDate today = LocalDate.now().plusDays(1);
+
+        LocalDate today=LocalDate.now(ZoneId.of("Asia/Kolkata")).plusDays(1);
+        String todayFormated = today.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
         long daysElapsed = java.time.temporal.ChronoUnit.DAYS.between(startDate, today);
 
         List<String> names = new ArrayList<>(people.keySet());
@@ -76,7 +79,7 @@ public class WhatsAppReminderRotating {
         }
 
         StringBuilder messageText = new StringBuilder();
-        messageText.append("🧾 *Daily Room Work Tracker* - ").append(today).append("\n\n");
+        messageText.append("🧾 *Daily Room Work Tracker* - ").append(todayFormated).append("\n\n");
 
         for (Map.Entry<String, List<String>> entry : todayAssignments.entrySet()) {
             if (!entry.getValue().isEmpty()) {
@@ -96,8 +99,8 @@ public class WhatsAppReminderRotating {
             }
             String logFilePath = "logs/reminders_log.txt";
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFilePath, true))) {
-                String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-                writer.write("------ Reminder Date: " + today + " (" + timestamp + ") ------\n");
+                String timestamp = LocalTime.now(ZoneId.of("Asia/Kolkata")).format(DateTimeFormatter.ofPattern("hh:mm a"));
+                writer.write("------ Reminder Date: " + todayFormated+ " (" + timestamp + ") ------\n");
                 writer.write(messageText.toString());
                 writer.write("\n---------------------------------------------\n\n");
             }
