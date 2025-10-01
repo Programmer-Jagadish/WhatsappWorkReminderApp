@@ -44,7 +44,7 @@ jobs:
       - name: Download existing log from Google Drive
         run: |
           mkdir -p logs
-          rclone copy gdrive:WhatsappReminderLog/reminders_log.txt logs/ --ignore-existing --verbose || true
+          rclone copy gdrive:WhatsappReminderLog/reminders_log.txt logs/ --verbose || true
 
       # ✅ Run the WhatsApp Reminder Java app (this appends new logs locally)
       - name: Run WhatsApp Reminder App
