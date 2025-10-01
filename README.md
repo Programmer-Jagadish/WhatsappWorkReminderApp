@@ -97,6 +97,3 @@ Reminder Date: 2025-09-25 (21:00:15)
 **Jagadish Navale – Developer & Maintainer**
 **jagadish.navale@outlook.com**
 
-### 📜 License
-
-This project is licensed under the MIT License. See LICENSE for details.
