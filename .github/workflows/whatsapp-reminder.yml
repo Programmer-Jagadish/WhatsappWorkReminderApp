@@ -53,4 +53,4 @@ jobs:
       # ✅ Upload updated log file back to Google Drive
       - name: Upload reminders log to Google Drive
         run: |
-          rclone copy logs/reminders_log.txt gdrive:WhatsappReminderLog --update --verbose
+          rclone copyto logs/reminders_log.txt gdrive:WhatsappReminderLog/reminders_log.txt --update --verbose
